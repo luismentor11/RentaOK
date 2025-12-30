@@ -24,6 +24,23 @@ Etapa 2 - Cuotas (installments) y generacion mensual
   - Abrir contrato -> tab Cuotas -> click Generar cuotas
   - Se crean cuotas mensuales y se listan
   - Repetir click no duplica (id estable)
+- QA Manual (Checklist):
+  - Crear contrato con startDate/endDate/dueDay/rentAmount.
+  - Ir a Contract Detail -> Tab "Cuotas".
+  - Click "Generar cuotas".
+  - Verificar en Firestore:
+    tenants/{tenantId}/installments
+    IDs: {contractId}_YYYY-MM
+  - Verificar por cada cuota:
+    - period correcto
+    - dueDate clamped si corresponde (ultimo dia del mes)
+    - totals {total, paid=0, due=total}
+    - status segun hoy (POR_VENCER/VENCE_HOY/VENCIDA)
+    - subcoleccion items contiene 1 item base:
+      type=ALQUILER, label="Alquiler", amount=rentAmount
+  - Click "Generar cuotas" nuevamente:
+    - NO duplica docs
+    - NO duplica items
 
 Etapa 3 - Pagos basicos e items manuales
 - Commits chicos:
