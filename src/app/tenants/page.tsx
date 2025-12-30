@@ -1,12 +1,20 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { getUserProfile } from "@/lib/db/users";
+import { listPeople, TenantPerson } from "@/lib/db/tenantsPeople";
 
 export default function TenantsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const [people, setPeople] = useState<TenantPerson[]>([]);
+  const [pageError, setPageError] = useState<string | null>(null);
+  const [pageLoading, setPageLoading] = useState(true);
+  const [tenantId, setTenantId] = useState<string | null>(null);
+  const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -14,7 +22,40 @@ export default function TenantsPage() {
     }
   }, [loading, user, router]);
 
-  if (loading) {
+  useEffect(() => {
+    if (!user || loading) return;
+    let active = true;
+
+    const load = async () => {
+      setPageLoading(true);
+      setPageError(null);
+      try {
+        const profile = await getUserProfile(user.uid);
+        if (!active) return;
+        const nextTenantId = profile?.tenantId ?? null;
+        setTenantId(nextTenantId);
+        if (!nextTenantId) {
+          router.replace("/onboarding");
+          return;
+        }
+        const list = await listPeople(nextTenantId);
+        if (!active) return;
+        setPeople(list);
+      } catch (err: any) {
+        if (!active) return;
+        setPageError(err?.message ?? "No se pudieron cargar inquilinos.");
+      } finally {
+        if (active) setPageLoading(false);
+      }
+    };
+
+    load();
+    return () => {
+      active = false;
+    };
+  }, [user, loading, router, reloadToken]);
+
+  if (loading || pageLoading) {
     return <div className="text-sm text-zinc-600">Cargando...</div>;
   }
 
@@ -23,9 +64,63 @@ export default function TenantsPage() {
   }
 
   return (
-    <section>
-      <h1 className="text-2xl font-semibold text-zinc-900">Inquilinos</h1>
-      <p className="mt-2 text-sm text-zinc-600">Proximamente.</p>
+    <section className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold text-zinc-900">Inquilinos</h1>
+        <Link
+          href="/tenants/new"
+          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+        >
+          Nuevo inquilino
+        </Link>
+      </div>
+      {pageError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {pageError}
+        </div>
+      )}
+      {pageError && (
+        <button
+          type="button"
+          onClick={() => setReloadToken((token) => token + 1)}
+          className="rounded-md border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
+        >
+          Reintentar
+        </button>
+      )}
+      {people.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-zinc-200 bg-white p-6 text-sm text-zinc-600">
+          Sin inquilinos cargados.
+        </div>
+      ) : (
+        <ul className="space-y-3">
+          {people.map((person) => (
+            <li
+              key={person.id}
+              className="flex items-center justify-between rounded-lg border border-zinc-200 bg-white p-4"
+            >
+              <div>
+                <div className="text-sm font-medium text-zinc-900">
+                  {person.fullName}
+                </div>
+                <div className="text-xs text-zinc-500">
+                  {person.dni ? `DNI: ${person.dni}` : "DNI: -"} |{" "}
+                  {person.phone ? `Tel: ${person.phone}` : "Tel: -"}
+                </div>
+              </div>
+              <Link
+                href={`/tenants/${person.id}`}
+                className="text-sm font-medium text-zinc-700 hover:text-zinc-900"
+              >
+                Editar
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+      {tenantId && (
+        <div className="text-xs text-zinc-400">Tenant: {tenantId}</div>
+      )}
     </section>
   );
 }
