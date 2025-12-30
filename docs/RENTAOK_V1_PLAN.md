@@ -55,6 +55,13 @@ Etapa 3 - Pagos basicos e items manuales
   - Marcar cuota como "pagado sin comprobante"
   - Mora solo como item manual, nunca automatico
 
+QA Manual (Checklist) - Commit 3.1
+- Generar cuotas
+- Registrar pago parcial (ej 1000) => status PARCIAL, paid incrementa, due baja
+- Registrar otro pago que complete => status PAGADA, due 0
+- Registrar pago con "sin comprobante" => paymentFlags.hasUnverifiedPayments true + badge visible
+- Verificar en Firestore que existe payment en /payments
+
 Etapa 4 - Notificaciones v1 (solo inquilino)
 - Commits chicos:
   - feat: tenant-only notification config and overrides

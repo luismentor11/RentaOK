@@ -9,6 +9,7 @@ import {
   getDocs,
   orderBy,
   query,
+  runTransaction,
   serverTimestamp,
   where,
   setDoc,
@@ -35,12 +36,17 @@ export type InstallmentNotificationOverride = {
   enabledR2?: boolean;
 };
 
+export type InstallmentPaymentFlags = {
+  hasUnverifiedPayments?: boolean;
+};
+
 export type Installment = {
   contractId: string;
   period: string;
   dueDate: Timestamp;
   status: InstallmentStatus;
   totals: InstallmentTotals;
+  paymentFlags?: InstallmentPaymentFlags;
   notificationConfigOverride?: InstallmentNotificationOverride;
   createdAt?: unknown;
   updatedAt?: unknown;
@@ -59,6 +65,14 @@ export type InstallmentItem = {
   type: InstallmentItemType;
   label: string;
   amount: number;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+};
+
+export type InstallmentPayment = {
+  amount: number;
+  withoutReceipt: boolean;
+  note?: string;
   createdAt?: unknown;
   updatedAt?: unknown;
 };
@@ -167,4 +181,63 @@ export async function listInstallmentsByContract(
     id: docSnap.id,
     ...(docSnap.data() as Omit<Installment, "id">),
   })) as InstallmentRecord[];
+}
+
+export async function registerInstallmentPayment(
+  tenantId: string,
+  installmentId: string,
+  input: { amount: number; withoutReceipt: boolean; note?: string }
+) {
+  if (!Number.isFinite(input.amount) || input.amount <= 0) {
+    throw new Error("El monto del pago debe ser mayor a 0.");
+  }
+
+  const installmentRef = doc(db, "tenants", tenantId, "installments", installmentId);
+  const paymentRef = doc(
+    collection(db, "tenants", tenantId, "installments", installmentId, "payments")
+  );
+  const noteValue = input.note?.trim();
+
+  await runTransaction(db, async (transaction) => {
+    const snap = await transaction.get(installmentRef);
+    if (!snap.exists()) {
+      throw new Error("La cuota no existe.");
+    }
+
+    const data = snap.data() as Installment;
+    const totals = data.totals ?? { total: 0, paid: 0, due: 0 };
+    const total = Number(totals.total ?? 0);
+    const paid = Number(totals.paid ?? 0);
+    const newPaid = paid + input.amount;
+    const newDue = Math.max(total - newPaid, 0);
+    const dueDate =
+      typeof (data.dueDate as any)?.toDate === "function"
+        ? (data.dueDate as any).toDate()
+        : new Date();
+    const newStatus =
+      newPaid >= total
+        ? "PAGADA"
+        : newPaid > 0
+          ? "PARCIAL"
+          : getStatusForDueDate(dueDate);
+
+    const updatePayload: Record<string, unknown> = {
+      "totals.paid": newPaid,
+      "totals.due": newDue,
+      status: newStatus,
+      updatedAt: serverTimestamp(),
+    };
+    if (input.withoutReceipt) {
+      updatePayload["paymentFlags.hasUnverifiedPayments"] = true;
+    }
+
+    transaction.update(installmentRef, updatePayload);
+    transaction.set(paymentRef, {
+      amount: input.amount,
+      withoutReceipt: input.withoutReceipt,
+      ...(noteValue ? { note: noteValue } : {}),
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    } satisfies InstallmentPayment);
+  });
 }

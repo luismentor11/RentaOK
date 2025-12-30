@@ -9,6 +9,7 @@ import { getContract, ContractRecord } from "@/lib/db/contracts";
 import {
   generateInstallmentsForContract,
   listInstallmentsByContract,
+  registerInstallmentPayment,
   InstallmentRecord,
 } from "@/lib/db/installments";
 
@@ -36,6 +37,14 @@ export default function ContractDetailPage({ params }: PageProps) {
   const [installmentsError, setInstallmentsError] = useState<string | null>(
     null
   );
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [paymentInstallment, setPaymentInstallment] =
+    useState<InstallmentRecord | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [paymentWithoutReceipt, setPaymentWithoutReceipt] = useState(false);
+  const [paymentNote, setPaymentNote] = useState("");
+  const [paymentSubmitting, setPaymentSubmitting] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<TabKey>("cuotas");
@@ -103,6 +112,21 @@ export default function ContractDetailPage({ params }: PageProps) {
     } finally {
       setInstallmentsLoading(false);
     }
+  };
+
+  const openPaymentModal = (installment: InstallmentRecord) => {
+    setPaymentInstallment(installment);
+    setPaymentAmount("");
+    setPaymentWithoutReceipt(false);
+    setPaymentNote("");
+    setPaymentError(null);
+    setPaymentModalOpen(true);
+  };
+
+  const closePaymentModal = () => {
+    if (paymentSubmitting) return;
+    setPaymentModalOpen(false);
+    setPaymentInstallment(null);
   };
 
   useEffect(() => {
@@ -278,6 +302,11 @@ export default function ContractDetailPage({ params }: PageProps) {
                         Vence: {formatDueDate(installment.dueDate)}
                       </div>
                     </div>
+                    {installment.paymentFlags?.hasUnverifiedPayments && (
+                      <div className="mt-1 text-xs font-semibold text-amber-600">
+                        Pago sin comprobante
+                      </div>
+                    )}
                     <div className="mt-1 text-xs text-zinc-500">
                       Estado: {installment.status}
                     </div>
@@ -285,6 +314,15 @@ export default function ContractDetailPage({ params }: PageProps) {
                       <span>Total: {installment.totals.total}</span>
                       <span>Pagado: {installment.totals.paid}</span>
                       <span>Saldo: {installment.totals.due}</span>
+                    </div>
+                    <div className="mt-3">
+                      <button
+                        type="button"
+                        onClick={() => openPaymentModal(installment)}
+                        className="rounded-md border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100"
+                      >
+                        Registrar pago
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -329,6 +367,117 @@ export default function ContractDetailPage({ params }: PageProps) {
 
       {tenantId && (
         <div className="text-xs text-zinc-400">Tenant: {tenantId}</div>
+      )}
+
+      {paymentModalOpen && paymentInstallment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-md rounded-lg bg-white p-4 shadow-lg">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-zinc-900">
+                Registrar pago
+              </h3>
+              <button
+                type="button"
+                onClick={closePaymentModal}
+                className="text-sm text-zinc-500 hover:text-zinc-700"
+              >
+                Cerrar
+              </button>
+            </div>
+            <p className="mt-1 text-xs text-zinc-500">
+              Periodo {paymentInstallment.period} - Total{" "}
+              {paymentInstallment.totals.total}
+            </p>
+            {paymentError && (
+              <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {paymentError}
+              </div>
+            )}
+            <div className="mt-4 space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-zinc-700">
+                  Monto pagado
+                </label>
+                <input
+                  type="number"
+                  value={paymentAmount}
+                  onChange={(event) => setPaymentAmount(event.target.value)}
+                  className="mt-2 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none"
+                  placeholder="1000"
+                />
+              </div>
+              <label className="flex items-center gap-2 text-sm text-zinc-700">
+                <input
+                  type="checkbox"
+                  checked={paymentWithoutReceipt}
+                  onChange={(event) =>
+                    setPaymentWithoutReceipt(event.target.checked)
+                  }
+                />
+                Sin comprobante
+              </label>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700">
+                  Nota (opcional)
+                </label>
+                <input
+                  type="text"
+                  value={paymentNote}
+                  onChange={(event) => setPaymentNote(event.target.value)}
+                  className="mt-2 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none"
+                  placeholder="Pago en efectivo"
+                />
+              </div>
+            </div>
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={closePaymentModal}
+                disabled={paymentSubmitting}
+                className="rounded-md border border-zinc-200 px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100 disabled:cursor-not-allowed"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={paymentSubmitting}
+                onClick={async () => {
+                  if (!tenantId || !paymentInstallment) return;
+                  const amountValue = Number(paymentAmount);
+                  if (!Number.isFinite(amountValue) || amountValue <= 0) {
+                    setPaymentError("El monto debe ser mayor a 0.");
+                    return;
+                  }
+                  setPaymentSubmitting(true);
+                  setPaymentError(null);
+                  try {
+                    await registerInstallmentPayment(
+                      tenantId,
+                      paymentInstallment.id,
+                      {
+                        amount: amountValue,
+                        withoutReceipt: paymentWithoutReceipt,
+                        note: paymentNote || undefined,
+                      }
+                    );
+                    await loadInstallments(tenantId, paymentInstallment.contractId);
+                    setPaymentModalOpen(false);
+                    setPaymentInstallment(null);
+                  } catch (err: any) {
+                    setPaymentError(
+                      err?.message ?? "No se pudo registrar el pago."
+                    );
+                  } finally {
+                    setPaymentSubmitting(false);
+                  }
+                }}
+                className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-300"
+              >
+                {paymentSubmitting ? "Guardando..." : "Guardar"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </section>
   );
