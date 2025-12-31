@@ -99,6 +99,19 @@ QA Manual (Checklist) - Commit 3.3
 - Asociar a una cuota (si implementado) -> se guarda installmentId
 - Verificar createdBy = uid
 
+### QA Manual (Checklist) - Export ZIP contrato
+
+- En un contrato con:
+  - PDF contrato subido
+  - 1 cuota con 1 pago con comprobante
+  - 1 evento con adjunto
+  - notificationLog presente
+- Exportar ZIP:
+  - Se descarga
+  - Contiene los archivos y CSVs
+  - Los adjuntos abren
+- Caso sin adjuntos: zip igual sale con README de faltantes.
+
 Etapa 4 - Notificaciones v1 (solo inquilino)
 - Commits chicos:
   - feat: tenant-only notification config and overrides

@@ -38,13 +38,14 @@ import {
   EventRecord,
   ContractEventType,
 } from "@/lib/db/events";
+import { exportContractZip } from "@/lib/export/exportContractZip";
 
 const tabOptions = [
   { key: "cuotas", label: "Cuotas" },
   { key: "garantes", label: "Garantes" },
   { key: "notificaciones", label: "Notificaciones" },
   { key: "bitacora", label: "Bitacora" },
-  { key: "zip", label: "Export ZIP" },
+  { key: "zip", label: "Exportar ZIP" },
 ] as const;
 
 const additionalItemTypes: { value: InstallmentItemType; label: string }[] = [
@@ -157,6 +158,9 @@ export default function ContractDetailPage({ params }: PageProps) {
   const [notificationSendError, setNotificationSendError] = useState<
     string | null
   >(null);
+  const [exportingZip, setExportingZip] = useState(false);
+  const [exportZipError, setExportZipError] = useState<string | null>(null);
+  const [exportZipSuccess, setExportZipSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -1693,7 +1697,44 @@ export default function ContractDetailPage({ params }: PageProps) {
           </div>
         )}
         {tab === "zip" && (
-          <div className="text-sm text-zinc-600">Export ZIP: placeholder.</div>
+          <div className="space-y-3">
+            <div className="text-sm text-zinc-600">
+              Descarga un ZIP con datos y adjuntos del contrato.
+            </div>
+            {exportZipError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {exportZipError}
+              </div>
+            )}
+            {exportZipSuccess && (
+              <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+                {exportZipSuccess}
+              </div>
+            )}
+            <button
+              type="button"
+              disabled={exportingZip}
+              onClick={async () => {
+                if (!tenantId || !contract) return;
+                setExportingZip(true);
+                setExportZipError(null);
+                setExportZipSuccess(null);
+                try {
+                  await exportContractZip(tenantId, contract.id);
+                  setExportZipSuccess("ZIP generado.");
+                } catch (err: any) {
+                  setExportZipError(
+                    err?.message ?? "No se pudo exportar el ZIP."
+                  );
+                } finally {
+                  setExportingZip(false);
+                }
+              }}
+              className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-300"
+            >
+              {exportingZip ? "Generando..." : "Descargar expediente ZIP"}
+            </button>
+          </div>
         )}
       </div>
 
