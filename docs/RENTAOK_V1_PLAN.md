@@ -100,6 +100,17 @@ QA Manual (Checklist) - Etapa 4.1
   - volver a heredar -> se elimina notificationOverride
 - No hay recipients manuales.
 
+QA Manual (Checklist) - Etapa 4.2
+- Setear un contrato con cuotas y enabled=true.
+- Forzar fechas (temporal) o probar con una cuota que caiga en:
+  - hoy = dueDate - 5 dias
+  - hoy = dueDate + 1 dia (si no PAGADA)
+- Confirmar que:
+  - aparecen en "Para enviar hoy"
+  - respetan override OFF
+  - botones abren wa.me y mailto correctos (texto correcto)
+- Si cuota PAGADA -> no aparece.
+
 Etapa 5 - Export ZIP obligatorio
 - Commits chicos:
   - feat: export ZIP with contract + installments
