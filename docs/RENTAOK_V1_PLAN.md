@@ -112,6 +112,15 @@ QA Manual (Checklist) - Commit 3.3
   - Los adjuntos abren
 - Caso sin adjuntos: zip igual sale con README de faltantes.
 
+### QA Manual (Checklist) - Dashboard operativo v1
+
+- Dashboard muestra cuotas
+- Filtro por status funciona
+- Registrar cobro desde dashboard actualiza totals/status
+- Agregar item actualiza totals/status
+- Registrar acuerdo setea EN_ACUERDO; quitar acuerdo recalcula
+- Reenviar notificacion abre mailto si enabled y no override false
+
 Etapa 4 - Notificaciones v1 (solo inquilino)
 - Commits chicos:
   - feat: tenant-only notification config and overrides

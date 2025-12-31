@@ -5,9 +5,11 @@ import {
   Transaction,
   addDoc,
   collection,
+  deleteField,
   doc,
   getDoc,
   getDocs,
+  limit,
   orderBy,
   query,
   runTransaction,
@@ -56,6 +58,7 @@ export type Installment = {
   totals: InstallmentTotals;
   paymentFlags?: InstallmentPaymentFlags;
   notificationOverride?: InstallmentNotificationOverride;
+  agreementNote?: string;
   createdAt?: unknown;
   updatedAt?: unknown;
 };
@@ -247,6 +250,25 @@ export async function listInstallmentsByContract(
   })) as InstallmentRecord[];
 }
 
+export async function listInstallmentsForTenant(
+  tenantId: string,
+  filters?: { status?: InstallmentStatus | "ALL" }
+) {
+  const installmentsRef = collection(db, "tenants", tenantId, "installments");
+  const constraints = [];
+  if (filters?.status && filters.status !== "ALL") {
+    constraints.push(where("status", "==", filters.status));
+  }
+  constraints.push(orderBy("dueDate", "asc"));
+  constraints.push(limit(100));
+  const q = query(installmentsRef, ...constraints);
+  const snap = await getDocs(q);
+  return snap.docs.map((docSnap) => ({
+    id: docSnap.id,
+    ...(docSnap.data() as Omit<Installment, "id">),
+  })) as InstallmentRecord[];
+}
+
 export async function listInstallmentItems(
   tenantId: string,
   installmentId: string
@@ -345,6 +367,50 @@ export async function deleteInstallmentItem(
       tenantId,
       installmentId
     );
+  });
+}
+
+export async function setInstallmentAgreementStatus(
+  tenantId: string,
+  installmentId: string,
+  enabled: boolean,
+  note?: string
+) {
+  const installmentRef = doc(db, "tenants", tenantId, "installments", installmentId);
+  const noteValue = note?.trim();
+
+  await runTransaction(db, async (transaction) => {
+    const snap = await transaction.get(installmentRef);
+    if (!snap.exists()) {
+      throw new Error("La cuota no existe.");
+    }
+
+    const data = snap.data() as Installment;
+    const updatePayload: Record<string, unknown> = {
+      updatedAt: serverTimestamp(),
+    };
+
+    if (enabled) {
+      updatePayload.status = "EN_ACUERDO";
+      if (noteValue) {
+        updatePayload.agreementNote = noteValue;
+      }
+    } else {
+      const totals = data.totals ?? { total: 0, paid: 0, due: 0 };
+      const total = Number(totals.total ?? 0);
+      const paid = Number(totals.paid ?? 0);
+      const dueDate = getDueDateFromInstallment(data);
+      const nextStatus =
+        paid >= total
+          ? "PAGADA"
+          : paid > 0
+            ? "PARCIAL"
+            : getStatusForDueDate(dueDate);
+      updatePayload.status = nextStatus;
+      updatePayload.agreementNote = deleteField();
+    }
+
+    transaction.update(installmentRef, updatePayload);
   });
 }
 
