@@ -56,7 +56,7 @@ export default function ContractsPage() {
   }, [user, loading, router, reloadToken]);
 
   if (loading || pageLoading) {
-    return <div className="text-sm text-zinc-600">Cargando...</div>;
+    return <div className="text-sm text-text-muted">Cargando...</div>;
   }
 
   if (!user) {
@@ -66,16 +66,16 @@ export default function ContractsPage() {
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-zinc-900">Contratos</h1>
+        <h1 className="text-2xl font-semibold text-text">Contratos</h1>
         <Link
           href="/contracts/new"
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+          className="rounded-md border border-border bg-surface-alt px-4 py-2 text-sm font-semibold text-text hover:bg-surface"
         >
           Nuevo contrato
         </Link>
       </div>
       {pageError && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <div className="rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
           {pageError}
         </div>
       )}
@@ -83,13 +83,13 @@ export default function ContractsPage() {
         <button
           type="button"
           onClick={() => setReloadToken((token) => token + 1)}
-          className="rounded-md border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
+          className="rounded-md border border-border px-4 py-2 text-sm font-medium text-text hover:bg-surface-alt"
         >
           Reintentar
         </button>
       )}
       {contracts.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-zinc-200 bg-white p-6 text-sm text-zinc-600">
+        <div className="rounded-lg border border-dashed border-border bg-surface p-6 text-sm text-text-muted">
           Sin contratos cargados.
         </div>
       ) : (
@@ -97,20 +97,22 @@ export default function ContractsPage() {
           {contracts.map((contract) => (
             <li
               key={contract.id}
-              className="flex items-center justify-between rounded-lg border border-zinc-200 bg-white p-4"
+              className="flex items-center justify-between rounded-lg border border-border bg-surface p-4"
             >
               <div>
-                <div className="text-sm font-medium text-zinc-900">
-                  {contract.property.title}
+                <div className="text-sm font-medium text-text">
+                  {contract.propertyTitle ||
+                    (contract as any)?.property?.title ||
+                    "-"}
                 </div>
-                <div className="text-xs text-zinc-500">
+                <div className="text-xs text-text-muted">
                   Locatario: {contract.parties.tenant.fullName} | Propietario:{" "}
                   {contract.parties.owner.fullName}
                 </div>
               </div>
               <Link
                 href={`/contracts/${contract.id}`}
-                className="text-sm font-medium text-zinc-700 hover:text-zinc-900"
+                className="text-sm font-medium text-text hover:text-text-muted"
               >
                 Ver detalle
               </Link>
@@ -119,7 +121,7 @@ export default function ContractsPage() {
         </ul>
       )}
       {tenantId && (
-        <div className="text-xs text-zinc-400">Tenant: {tenantId}</div>
+        <div className="text-xs text-text-muted">Tenant: {tenantId}</div>
       )}
     </section>
   );

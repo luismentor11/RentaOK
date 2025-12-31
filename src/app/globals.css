@@ -1,26 +1,69 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #062b2b;
+  --foreground: #e8f1f1;
+  --petrol-surface: #0b3a3a;
+  --petrol-surface-alt: #0f4a4a;
+  --petrol-border: #145b5b;
+  --petrol-text: #e8f1f1;
+  --petrol-text-muted: #b7d0d0;
+  --petrol-muted: #7baaaa;
+  --status-success: #22c55e;
+  --status-warning: #facc15;
+  --status-risk: #fb923c;
+  --status-danger: #ef4444;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-bg: var(--background);
+  --color-surface: var(--petrol-surface);
+  --color-surface-alt: var(--petrol-surface-alt);
+  --color-border: var(--petrol-border);
+  --color-text: var(--petrol-text);
+  --color-text-muted: var(--petrol-text-muted);
+  --color-muted: var(--petrol-muted);
+  --color-success: var(--status-success);
+  --color-warning: var(--status-warning);
+  --color-risk: var(--status-risk);
+  --color-danger: var(--status-danger);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Legacy zinc utility overrides to keep cockpit theme consistent. */
+.bg-white {
+  background-color: var(--petrol-surface) !important;
+}
+.bg-zinc-50,
+.bg-zinc-100 {
+  background-color: var(--petrol-surface-alt) !important;
+}
+.bg-zinc-900 {
+  background-color: var(--petrol-surface-alt) !important;
+}
+.bg-zinc-800 {
+  background-color: var(--petrol-surface) !important;
+}
+.border-zinc-200 {
+  border-color: var(--petrol-border) !important;
+}
+.text-zinc-900 {
+  color: var(--petrol-text) !important;
+}
+.text-zinc-700,
+.text-zinc-600 {
+  color: var(--petrol-text-muted) !important;
+}
+.text-zinc-500,
+.text-zinc-400 {
+  color: var(--petrol-muted) !important;
 }

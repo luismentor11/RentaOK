@@ -7,42 +7,62 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
 
   return (
-    <div className="min-h-screen bg-zinc-50">
-      <header className="border-b border-zinc-200 bg-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
-          <div className="text-lg font-semibold text-zinc-900">RentaOK</div>
-          <div className="flex items-center gap-4 text-sm text-zinc-600">
-            <span>{user?.email ?? ""}</span>
-            <button
-              type="button"
-              onClick={logout}
-              className="rounded-md border border-zinc-200 px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
+    <div className="min-h-screen bg-bg text-text">
+      <div className="flex min-h-screen">
+        <aside className="sticky top-0 h-screen w-64 border-r border-border bg-surface px-5 py-6">
+          <div className="text-lg font-semibold text-text">RentaOK</div>
+          <div className="mt-6 space-y-2 text-sm font-medium text-text-muted">
+            <Link
+              href="/"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 transition hover:bg-surface-alt hover:text-text"
             >
-              Cerrar sesion
-            </button>
+              <span className="h-2 w-2 rounded-sm bg-muted" />
+              Dashboard
+            </Link>
+            <Link
+              href="/contracts"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 transition hover:bg-surface-alt hover:text-text"
+            >
+              <span className="h-2 w-2 rounded-sm bg-muted" />
+              Contratos
+            </Link>
+            <Link
+              href="/tenants"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 transition hover:bg-surface-alt hover:text-text"
+            >
+              <span className="h-2 w-2 rounded-sm bg-muted" />
+              Inquilinos
+            </Link>
+            <Link
+              href="/settings"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 transition hover:bg-surface-alt hover:text-text"
+            >
+              <span className="h-2 w-2 rounded-sm bg-muted" />
+              Configuracion
+            </Link>
           </div>
+        </aside>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <header className="sticky top-0 z-10 border-b border-border bg-surface/90 backdrop-blur">
+            <div className="flex items-center justify-between px-6 py-4 text-sm text-text-muted">
+              <span>Panel operativo</span>
+              <div className="flex items-center gap-3">
+                <span className="hidden text-xs text-text-muted md:block">
+                  {user?.email ?? ""}
+                </span>
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-text hover:bg-surface-alt"
+                >
+                  Cerrar sesion
+                </button>
+              </div>
+            </div>
+          </header>
+          <main className="flex-1 px-6 py-8">{children}</main>
         </div>
-      </header>
-      <nav className="border-b border-zinc-200 bg-white">
-        <div className="mx-auto flex max-w-5xl gap-4 px-4 py-3 text-sm font-medium text-zinc-700">
-          <Link href="/" className="hover:text-zinc-900">
-            Dashboard
-          </Link>
-          <Link href="/properties" className="hover:text-zinc-900">
-            Propiedades
-          </Link>
-          <Link href="/contracts" className="hover:text-zinc-900">
-            Contratos
-          </Link>
-          <Link href="/tenants" className="hover:text-zinc-900">
-            Inquilinos
-          </Link>
-          <Link href="/settings" className="hover:text-zinc-900">
-            Configuracion
-          </Link>
-        </div>
-      </nav>
-      <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
+      </div>
     </div>
   );
 }

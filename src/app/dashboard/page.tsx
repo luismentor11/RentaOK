@@ -80,6 +80,15 @@ export default function OperationalDashboardPage() {
   const [itemSubmitting, setItemSubmitting] = useState(false);
   const [itemError, setItemError] = useState<string | null>(null);
 
+  const statusBadgeColor: Record<InstallmentStatus, string> = {
+    POR_VENCER: "bg-success/15 text-success",
+    VENCE_HOY: "bg-warning/15 text-warning",
+    VENCIDA: "bg-danger/15 text-danger",
+    EN_ACUERDO: "bg-risk/15 text-risk",
+    PARCIAL: "bg-warning/15 text-warning",
+    PAGADA: "bg-success/15 text-success",
+  };
+
   useEffect(() => {
     if (!loading && !user) {
       router.replace("/login");
@@ -168,6 +177,52 @@ export default function OperationalDashboardPage() {
     });
   }, [installments, searchTerm]);
 
+  const kpis = useMemo(() => {
+    const counts = installments.reduce(
+      (acc, item) => {
+        acc.total += 1;
+        acc.due += Number(item.totals?.due ?? 0);
+        acc.paid += Number(item.totals?.paid ?? 0);
+        acc[item.status] = (acc[item.status] ?? 0) + 1;
+        return acc;
+      },
+      {
+        total: 0,
+        due: 0,
+        paid: 0,
+        POR_VENCER: 0,
+        VENCE_HOY: 0,
+        VENCIDA: 0,
+        EN_ACUERDO: 0,
+        PARCIAL: 0,
+        PAGADA: 0,
+      } as Record<string, number>
+    );
+
+    return [
+      {
+        label: "Cuotas activas",
+        value: String(counts.total),
+        tone: "bg-surface-alt text-text",
+      },
+      {
+        label: "Adeudado",
+        value: String(counts.due),
+        tone: "bg-danger/15 text-danger",
+      },
+      {
+        label: "Pagado",
+        value: String(counts.paid),
+        tone: "bg-success/15 text-success",
+      },
+      {
+        label: "En acuerdo",
+        value: String(counts.EN_ACUERDO),
+        tone: "bg-risk/15 text-risk",
+      },
+    ];
+  }, [installments]);
+
   const openPaymentModal = (installment: InstallmentRecord) => {
     setPaymentInstallment(installment);
     setPaymentAmount("");
@@ -202,7 +257,7 @@ export default function OperationalDashboardPage() {
   };
 
   if (loading || pageLoading) {
-    return <div className="text-sm text-zinc-600">Cargando...</div>;
+    return <div className="text-sm text-text-muted">Cargando...</div>;
   }
 
   if (!user) {
@@ -211,7 +266,7 @@ export default function OperationalDashboardPage() {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+      <div className="rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
         {error}
       </div>
     );
@@ -220,21 +275,50 @@ export default function OperationalDashboardPage() {
   return (
     <section className="space-y-6">
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold text-zinc-900">Dashboard</h1>
-        <p className="text-sm text-zinc-600">
-          Operaciones rapidas sobre cuotas.
-        </p>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold text-text">Dashboard</h1>
+            <p className="text-sm text-text-muted">
+              Operaciones rapidas sobre cuotas.
+            </p>
+          </div>
+          <Link
+            href="/contracts"
+            className="rounded-md border border-border bg-surface-alt px-3 py-2 text-xs font-semibold text-text hover:bg-surface"
+          >
+            Ver contratos
+          </Link>
+        </div>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {kpis.map((kpi) => (
+          <div
+            key={kpi.label}
+            className="rounded-xl border border-border bg-surface p-4"
+          >
+            <div className="flex items-center justify-between text-xs text-text-muted">
+              <span>{kpi.label}</span>
+              <span className={`rounded-full px-2 py-0.5 text-[10px] ${kpi.tone}`}>
+                KPI
+              </span>
+            </div>
+            <div className="mt-3 text-2xl font-semibold text-text">
+              {kpi.value}
+            </div>
+          </div>
+        ))}
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex flex-col">
-          <label className="text-xs font-medium text-zinc-500">Estado</label>
+          <label className="text-xs font-medium text-text-muted">Estado</label>
           <select
             value={statusFilter}
             onChange={(event) =>
               setStatusFilter(event.target.value as InstallmentStatus | "ALL")
             }
-            className="mt-1 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none"
+            className="mt-1 rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-text focus:border-text focus:outline-none"
           >
             {statusOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -244,29 +328,29 @@ export default function OperationalDashboardPage() {
           </select>
         </div>
         <div className="flex flex-1 flex-col">
-          <label className="text-xs font-medium text-zinc-500">
+          <label className="text-xs font-medium text-text-muted">
             Busqueda
           </label>
           <input
             type="text"
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
-            className="mt-1 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none"
+            className="mt-1 w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-text focus:border-text focus:outline-none"
             placeholder="Buscar por periodo o contrato"
           />
         </div>
       </div>
 
       {installmentsError && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <div className="rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
           {installmentsError}
         </div>
       )}
 
       {installmentsLoading ? (
-        <div className="text-sm text-zinc-600">Cargando cuotas...</div>
+        <div className="text-sm text-text-muted">Cargando cuotas...</div>
       ) : filteredInstallments.length === 0 ? (
-        <div className="text-sm text-zinc-600">Sin cuotas para mostrar.</div>
+        <div className="text-sm text-text-muted">Sin cuotas para mostrar.</div>
       ) : (
         <div className="space-y-3">
           {filteredInstallments.map((installment) => {
@@ -296,34 +380,36 @@ export default function OperationalDashboardPage() {
             return (
               <div
                 key={installment.id}
-                className="rounded-lg border border-zinc-200 bg-white p-4 text-sm text-zinc-700"
+                className="rounded-xl border border-border bg-surface p-4 text-sm text-text"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <div className="text-sm font-semibold text-zinc-900">
+                    <div className="text-sm font-semibold text-text">
                       Periodo {installment.period}
                     </div>
-                    <div className="mt-1 text-xs text-zinc-500">
+                    <div className="mt-1 text-xs text-text-muted">
                       Vencimiento {formatDueDate(installment.dueDate)}
                     </div>
                     <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-                      <span className="rounded-full bg-zinc-100 px-2 py-0.5 font-semibold text-zinc-600">
+                      <span
+                        className={`rounded-full px-2 py-0.5 font-semibold ${statusBadgeColor[installment.status]}`}
+                      >
                         {installment.status}
                       </span>
-                      <span className="rounded-full bg-zinc-50 px-2 py-0.5 font-medium text-zinc-600">
+                      <span className="rounded-full bg-surface-alt px-2 py-0.5 font-medium text-text-muted">
                         Total {installment.totals.total}
                       </span>
-                      <span className="rounded-full bg-zinc-50 px-2 py-0.5 font-medium text-zinc-600">
+                      <span className="rounded-full bg-surface-alt px-2 py-0.5 font-medium text-text-muted">
                         Pagado {installment.totals.paid}
                       </span>
-                      <span className="rounded-full bg-zinc-50 px-2 py-0.5 font-medium text-zinc-600">
+                      <span className="rounded-full bg-surface-alt px-2 py-0.5 font-medium text-text-muted">
                         Adeudado {installment.totals.due}
                       </span>
                     </div>
                   </div>
                   <Link
                     href={`/contracts/${installment.contractId}`}
-                    className="rounded-md border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100"
+                    className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-text hover:bg-surface-alt"
                   >
                     Abrir contrato
                   </Link>
@@ -332,14 +418,14 @@ export default function OperationalDashboardPage() {
                   <button
                     type="button"
                     onClick={() => openPaymentModal(installment)}
-                    className="rounded-md border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100"
+                    className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-text hover:bg-surface-alt"
                   >
                     Registrar cobro
                   </button>
                   <button
                     type="button"
                     onClick={() => openItemModal(installment)}
-                    className="rounded-md border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100"
+                    className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-text hover:bg-surface-alt"
                   >
                     Agregar item
                   </button>
@@ -389,7 +475,7 @@ export default function OperationalDashboardPage() {
                         }));
                       }
                     }}
-                    className="rounded-md border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100 disabled:cursor-not-allowed"
+                    className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-text hover:bg-surface-alt disabled:cursor-not-allowed disabled:text-text-muted"
                   >
                     {installment.status === "EN_ACUERDO"
                       ? "Quitar acuerdo"
@@ -411,7 +497,7 @@ export default function OperationalDashboardPage() {
                       )}&body=${encodeURIComponent(message.body)}`;
                       window.open(href, "_blank");
                     }}
-                    className="rounded-md border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:text-zinc-400"
+                    className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-text hover:bg-surface-alt disabled:cursor-not-allowed disabled:text-text-muted"
                   >
                     Reenviar notificacion
                   </button>
@@ -423,55 +509,55 @@ export default function OperationalDashboardPage() {
       )}
 
       {paymentModalOpen && paymentInstallment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-md rounded-lg bg-white p-4 shadow-lg">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-md rounded-lg border border-border bg-surface p-4 shadow-lg">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-zinc-900">
+              <h3 className="text-sm font-semibold text-text">
                 Registrar cobro
               </h3>
               <button
                 type="button"
                 onClick={closePaymentModal}
-                className="text-sm text-zinc-500 hover:text-zinc-700"
+                className="text-sm text-text-muted hover:text-text"
               >
                 Cerrar
               </button>
             </div>
-            <p className="mt-1 text-xs text-zinc-500">
+            <p className="mt-1 text-xs text-text-muted">
               Periodo {paymentInstallment.period} - Total{" "}
               {paymentInstallment.totals.total}
             </p>
             {paymentError && (
-              <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              <div className="mt-3 rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
                 {paymentError}
               </div>
             )}
             <div className="mt-4 space-y-3">
               <div>
-                <label className="block text-sm font-medium text-zinc-700">
+                <label className="block text-sm font-medium text-text">
                   Monto pagado
                 </label>
                 <input
                   type="number"
                   value={paymentAmount}
                   onChange={(event) => setPaymentAmount(event.target.value)}
-                  className="mt-2 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none"
+                  className="mt-2 w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-text focus:border-text focus:outline-none"
                   placeholder="1000"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-zinc-700">
+                <label className="block text-sm font-medium text-text">
                   Fecha y hora
                 </label>
                 <input
                   type="datetime-local"
                   value={paymentPaidAt}
                   onChange={(event) => setPaymentPaidAt(event.target.value)}
-                  className="mt-2 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none"
+                  className="mt-2 w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-text focus:border-text focus:outline-none"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-zinc-700">
+                <label className="block text-sm font-medium text-text">
                   Medio de pago
                 </label>
                 <select
@@ -479,7 +565,7 @@ export default function OperationalDashboardPage() {
                   onChange={(event) =>
                     setPaymentMethod(event.target.value as PaymentMethod)
                   }
-                  className="mt-2 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none"
+                  className="mt-2 w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-text focus:border-text focus:outline-none"
                 >
                   <option value="EFECTIVO">Efectivo</option>
                   <option value="TRANSFERENCIA">Transferencia</option>
@@ -487,7 +573,7 @@ export default function OperationalDashboardPage() {
                   <option value="OTRO">Otro</option>
                 </select>
               </div>
-              <label className="flex items-center gap-2 text-sm text-zinc-700">
+              <label className="flex items-center gap-2 text-sm text-text">
                 <input
                   type="checkbox"
                   checked={paymentWithoutReceipt}
@@ -504,7 +590,7 @@ export default function OperationalDashboardPage() {
                 Sin comprobante
               </label>
               <div>
-                <label className="block text-sm font-medium text-zinc-700">
+                <label className="block text-sm font-medium text-text">
                   Comprobante (opcional)
                 </label>
                 <input
@@ -514,18 +600,18 @@ export default function OperationalDashboardPage() {
                   onChange={(event) =>
                     setPaymentReceiptFile(event.target.files?.[0] ?? null)
                   }
-                  className="mt-2 w-full text-sm text-zinc-900 file:mr-3 file:rounded-md file:border file:border-zinc-200 file:bg-white file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-zinc-700 hover:file:bg-zinc-100 disabled:cursor-not-allowed disabled:text-zinc-400"
+                  className="mt-2 w-full text-sm text-text file:mr-3 file:rounded-md file:border file:border-border file:bg-surface-alt file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-text hover:file:bg-surface disabled:cursor-not-allowed disabled:text-text-muted"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-zinc-700">
+                <label className="block text-sm font-medium text-text">
                   Nota (opcional)
                 </label>
                 <textarea
                   rows={2}
                   value={paymentNote}
                   onChange={(event) => setPaymentNote(event.target.value)}
-                  className="mt-2 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none"
+                  className="mt-2 w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-text focus:border-text focus:outline-none"
                   placeholder="Pago en efectivo"
                 />
               </div>
@@ -535,7 +621,7 @@ export default function OperationalDashboardPage() {
                 type="button"
                 onClick={closePaymentModal}
                 disabled={paymentSubmitting}
-                className="rounded-md border border-zinc-200 px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100 disabled:cursor-not-allowed"
+                className="rounded-md border border-border px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-alt disabled:cursor-not-allowed disabled:text-text-muted"
               >
                 Cancelar
               </button>
@@ -599,7 +685,7 @@ export default function OperationalDashboardPage() {
                     setPaymentSubmitting(false);
                   }
                 }}
-                className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-300"
+                className="rounded-md bg-surface-alt px-3 py-1.5 text-sm font-medium text-text hover:bg-surface disabled:cursor-not-allowed disabled:bg-surface"
               >
                 {paymentSubmitting ? "Guardando..." : "Guardar"}
               </button>
@@ -609,31 +695,31 @@ export default function OperationalDashboardPage() {
       )}
 
       {itemModalOpen && itemInstallment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-md rounded-lg bg-white p-4 shadow-lg">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-md rounded-lg border border-border bg-surface p-4 shadow-lg">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-zinc-900">
+              <h3 className="text-sm font-semibold text-text">
                 Agregar item
               </h3>
               <button
                 type="button"
                 onClick={closeItemModal}
-                className="text-sm text-zinc-500 hover:text-zinc-700"
+                className="text-sm text-text-muted hover:text-text"
               >
                 Cerrar
               </button>
             </div>
-            <p className="mt-1 text-xs text-zinc-500">
+            <p className="mt-1 text-xs text-text-muted">
               Periodo {itemInstallment.period}
             </p>
             {itemError && (
-              <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              <div className="mt-3 rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
                 {itemError}
               </div>
             )}
             <div className="mt-4 space-y-3">
               <div>
-                <label className="block text-sm font-medium text-zinc-700">
+                <label className="block text-sm font-medium text-text">
                   Tipo
                 </label>
                 <select
@@ -641,7 +727,7 @@ export default function OperationalDashboardPage() {
                   onChange={(event) =>
                     setItemType(event.target.value as InstallmentItemType)
                   }
-                  className="mt-2 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none"
+                  className="mt-2 w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-text focus:border-text focus:outline-none"
                 >
                   {additionalItemTypes.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -651,30 +737,30 @@ export default function OperationalDashboardPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-zinc-700">
+                <label className="block text-sm font-medium text-text">
                   Concepto
                 </label>
                 <input
                   type="text"
                   value={itemLabel}
                   onChange={(event) => setItemLabel(event.target.value)}
-                  className="mt-2 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none"
+                  className="mt-2 w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-text focus:border-text focus:outline-none"
                   placeholder="Ej: Expensas marzo"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-zinc-700">
+                <label className="block text-sm font-medium text-text">
                   Monto
                 </label>
                 <input
                   type="number"
                   value={itemAmount}
                   onChange={(event) => setItemAmount(event.target.value)}
-                  className="mt-2 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 focus:border-zinc-900 focus:outline-none"
+                  className="mt-2 w-full rounded-lg border border-border bg-surface-alt px-3 py-2 text-sm text-text focus:border-text focus:outline-none"
                   placeholder="1000"
                 />
                 {itemType === "DESCUENTO" && (
-                  <div className="mt-1 text-[11px] text-zinc-500">
+                  <div className="mt-1 text-[11px] text-text-muted">
                     Se guarda como monto negativo.
                   </div>
                 )}
@@ -685,7 +771,7 @@ export default function OperationalDashboardPage() {
                 type="button"
                 onClick={closeItemModal}
                 disabled={itemSubmitting}
-                className="rounded-md border border-zinc-200 px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100 disabled:cursor-not-allowed"
+                className="rounded-md border border-border px-3 py-1.5 text-sm font-medium text-text hover:bg-surface-alt disabled:cursor-not-allowed disabled:text-text-muted"
               >
                 Cancelar
               </button>
@@ -734,7 +820,7 @@ export default function OperationalDashboardPage() {
                     setItemSubmitting(false);
                   }
                 }}
-                className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-300"
+                className="rounded-md bg-surface-alt px-3 py-1.5 text-sm font-medium text-text hover:bg-surface disabled:cursor-not-allowed disabled:bg-surface"
               >
                 {itemSubmitting ? "Guardando..." : "Guardar"}
               </button>
