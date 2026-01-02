@@ -1,7 +1,7 @@
 "use client";
 
 import { initializeApp, getApps } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth, type Auth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 import { initializeFirestore, serverTimestamp } from "firebase/firestore";
 
@@ -12,6 +12,7 @@ type FirebaseWebAppConfig = {
   storageBucket?: string;
   messagingSenderId?: string;
   appId?: string;
+  measurementId?: string;
 };
 
 const envConfig: FirebaseWebAppConfig = {
@@ -24,46 +25,61 @@ const envConfig: FirebaseWebAppConfig = {
 };
 
 const getFirebaseConfig = (): FirebaseWebAppConfig => {
-  if (envConfig.apiKey) {
+  if (
+    envConfig.apiKey &&
+    envConfig.authDomain &&
+    envConfig.projectId &&
+    envConfig.appId
+  ) {
     return envConfig;
   }
 
   const rawConfig = process.env.FIREBASE_WEBAPP_CONFIG;
-  if (!rawConfig) {
-    return envConfig;
+  if (rawConfig) {
+    try {
+      const parsed = JSON.parse(rawConfig) as FirebaseWebAppConfig;
+      const mappedConfig = {
+        apiKey: parsed.apiKey,
+        authDomain: parsed.authDomain,
+        projectId: parsed.projectId,
+        storageBucket: parsed.storageBucket,
+        messagingSenderId: parsed.messagingSenderId,
+        appId: parsed.appId,
+        measurementId: parsed.measurementId,
+      };
+
+      if (
+        mappedConfig.apiKey &&
+        mappedConfig.authDomain &&
+        mappedConfig.projectId &&
+        mappedConfig.appId
+      ) {
+        return mappedConfig;
+      }
+    } catch {
+      throw new Error(
+        "Failed to parse FIREBASE_WEBAPP_CONFIG. Provide valid JSON or set NEXT_PUBLIC_FIREBASE_* env vars.",
+      );
+    }
   }
 
-  try {
-    const parsed = JSON.parse(rawConfig) as FirebaseWebAppConfig;
-    return {
-      apiKey: parsed.apiKey,
-      authDomain: parsed.authDomain,
-      projectId: parsed.projectId,
-      storageBucket: parsed.storageBucket,
-      messagingSenderId: parsed.messagingSenderId,
-      appId: parsed.appId,
-    };
-  } catch {
-    return envConfig;
-  }
+  throw new Error(
+    "Missing Firebase config. Set NEXT_PUBLIC_FIREBASE_* env vars or provide FIREBASE_WEBAPP_CONFIG.",
+  );
 };
 
 const firebaseConfig = getFirebaseConfig();
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 
-let authClient: ReturnType<typeof getAuth> | null = null;
+export const auth: Auth | null =
+  typeof window !== "undefined" ? getAuth(app) : null;
 
-export const getAuthClient = () => {
+export const getAuthClient = (): Auth => {
   if (typeof window === "undefined") {
-    return null;
+    throw new Error("Firebase Auth is only available in the browser.");
   }
-  if (!authClient) {
-    authClient = getAuth(app);
-  }
-  return authClient;
+  return auth ?? getAuth(app);
 };
-
-export const auth = getAuthClient();
 export const db = initializeFirestore(app, {
   experimentalAutoDetectLongPolling: true,
 });

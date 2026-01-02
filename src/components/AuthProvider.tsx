@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import {
   User,
+  type Auth,
   onAuthStateChanged,
   signOut,
   signInWithPopup,
@@ -26,16 +27,30 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [auth, setAuth] = useState<Auth | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const auth = getAuthClient();
 
   useEffect(() => {
-    if (!auth) {
-      setLoading(false);
-      setError("Auth no disponible.");
-      return;
+    let mounted = true;
+    try {
+      const clientAuth = getAuthClient();
+      if (mounted) {
+        setAuth(clientAuth);
+      }
+    } catch (err: any) {
+      if (mounted) {
+        setError(err?.message ?? "Auth no disponible.");
+        setLoading(false);
+      }
     }
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!auth) return;
     const unsub = onAuthStateChanged(
       auth,
       (u) => {
