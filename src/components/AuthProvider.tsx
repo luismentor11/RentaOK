@@ -72,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
     return () => unsub();
-  }, []);
+  }, [auth, authChecked]);
 
   const logout = async () => {
     if (!auth) {
