@@ -40,6 +40,8 @@ const defaultSettings: TenantSettings = {
   },
 };
 
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function SettingsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -118,6 +120,10 @@ export default function SettingsPage() {
         setOfficeError("El email de contacto es obligatorio.");
         return;
       }
+      if (!emailPattern.test(contactEmail)) {
+        setOfficeError("El email de contacto no es valido.");
+        return;
+      }
       if (!whatsapp) {
         setOfficeError("El WhatsApp es obligatorio.");
         return;
@@ -178,6 +184,23 @@ export default function SettingsPage() {
       setSavingReminders(false);
     }
   };
+
+  const officeNameValue = settings.office.officeName.trim();
+  const contactEmailValue = settings.office.contactEmail.trim();
+  const whatsappValue = settings.office.whatsapp.trim();
+  const isOfficeValid =
+    Boolean(officeNameValue) &&
+    Boolean(contactEmailValue) &&
+    emailPattern.test(contactEmailValue) &&
+    Boolean(whatsappValue);
+
+  const remindersBeforeValue = Number(settings.reminders.daysBeforeDue);
+  const remindersAfterValue = Number(settings.reminders.daysAfterDue);
+  const isRemindersValid =
+    Number.isFinite(remindersBeforeValue) &&
+    remindersBeforeValue >= 0 &&
+    Number.isFinite(remindersAfterValue) &&
+    remindersAfterValue >= 0;
 
   if (loading || pageLoading) {
     return <div className="text-sm text-zinc-600">Cargando...</div>;
@@ -275,7 +298,7 @@ export default function SettingsPage() {
           <button
             type="button"
             onClick={handleOfficeSave}
-            disabled={savingOffice}
+            disabled={savingOffice || !isOfficeValid}
             className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-300"
           >
             {savingOffice ? "Guardando..." : "Guardar"}
@@ -389,7 +412,7 @@ export default function SettingsPage() {
           <button
             type="button"
             onClick={handleRemindersSave}
-            disabled={savingReminders}
+            disabled={savingReminders || !isRemindersValid}
             className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-300"
           >
             {savingReminders ? "Guardando..." : "Guardar"}

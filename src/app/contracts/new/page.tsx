@@ -270,6 +270,35 @@ export default function NewContractPage() {
   };
 
   const propertyInputsDisabled = propertySelection !== "manual";
+  const dueDayValue = Number(dueDay);
+  const rentAmountValue = Number(rentAmount);
+  const updateRulePeriodValue = Number(updateRulePeriod);
+  const depositValue = Number(depositAmount || "0");
+  const guarantorsValid =
+    guarantors.length > 0 &&
+    guarantors.every(
+      (guarantor) =>
+        Boolean(guarantor.fullName.trim()) &&
+        Boolean(guarantor.address.trim())
+    );
+  const isFormValid =
+    Boolean(propertyTitle.trim()) &&
+    Boolean(propertyAddress.trim()) &&
+    Boolean(tenantName.trim()) &&
+    Boolean(ownerName.trim()) &&
+    Boolean(contractPdf) &&
+    Boolean(startDate) &&
+    Boolean(endDate) &&
+    Number.isFinite(dueDayValue) &&
+    dueDayValue >= 1 &&
+    dueDayValue <= 31 &&
+    Number.isFinite(rentAmountValue) &&
+    rentAmountValue > 0 &&
+    Number.isFinite(updateRulePeriodValue) &&
+    updateRulePeriodValue > 0 &&
+    Number.isFinite(depositValue) &&
+    depositValue >= 0 &&
+    guarantorsValid;
 
   if (loading || pageLoading) {
     return <div className="text-sm text-zinc-600">Cargando...</div>;
@@ -660,7 +689,7 @@ export default function NewContractPage() {
       <button
         type="button"
         onClick={handleSubmit}
-        disabled={submitting}
+        disabled={submitting || !isFormValid}
         className="w-full rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-300"
       >
         {submitting ? "Guardando..." : "Crear contrato"}

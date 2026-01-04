@@ -373,6 +373,25 @@ export default function ContractDetailPage({ params }: PageProps) {
     setMessageModalOpen(false);
   };
 
+  const paymentAmountValue = Number(paymentAmount);
+  const paymentDateValue = paymentPaidAt ? new Date(paymentPaidAt) : new Date();
+  const isPaymentFormValid =
+    Number.isFinite(paymentAmountValue) &&
+    paymentAmountValue > 0 &&
+    Boolean(paymentMethod) &&
+    Number.isFinite(paymentDateValue.getTime());
+
+  const itemAmountValue = Number(itemAmount);
+  const isItemFormValid =
+    Boolean(itemLabel.trim()) &&
+    Number.isFinite(itemAmountValue) &&
+    itemAmountValue !== 0 &&
+    (itemType === "DESCUENTO" ? true : itemAmountValue > 0);
+
+  const lateFeeAmountValue = Number(lateFeeAmount);
+  const isLateFeeFormValid =
+    Number.isFinite(lateFeeAmountValue) && lateFeeAmountValue > 0;
+
   useEffect(() => {
     if (!tenantId || !contract) return;
     loadInstallments(tenantId, contract.id);
@@ -2055,7 +2074,7 @@ export default function ContractDetailPage({ params }: PageProps) {
               </button>
               <button
                 type="button"
-                disabled={paymentSubmitting}
+                disabled={paymentSubmitting || !isPaymentFormValid}
                 onClick={async () => {
                   if (!tenantId || !paymentInstallment) return;
                   if (!user?.uid) {
@@ -2205,7 +2224,7 @@ export default function ContractDetailPage({ params }: PageProps) {
               </button>
               <button
                 type="button"
-                disabled={itemSubmitting}
+                disabled={itemSubmitting || !isItemFormValid}
                 onClick={async () => {
                   if (!tenantId || !itemInstallment) return;
                   const labelValue = itemLabel.trim();
@@ -2308,7 +2327,7 @@ export default function ContractDetailPage({ params }: PageProps) {
               </button>
               <button
                 type="button"
-                disabled={lateFeeSubmitting}
+                disabled={lateFeeSubmitting || !isLateFeeFormValid}
                 onClick={async () => {
                   if (!tenantId || !lateFeeInstallment) return;
                   const amountValue = Number(lateFeeAmount);
