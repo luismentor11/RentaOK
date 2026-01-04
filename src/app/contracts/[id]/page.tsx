@@ -41,11 +41,12 @@ import {
 import { exportContractZip } from "@/lib/export/exportContractZip";
 
 const tabOptions = [
-  { key: "cuotas", label: "Cuotas" },
-  { key: "garantes", label: "Garantes" },
-  { key: "notificaciones", label: "Notificaciones" },
-  { key: "bitacora", label: "Bitacora" },
-  { key: "zip", label: "Exportar ZIP" },
+  { key: "resumen", label: "Resumen" },
+  { key: "partes", label: "Partes" },
+  { key: "pagos", label: "Pagos" },
+  { key: "documentos", label: "Documentos" },
+  { key: "alertas", label: "Alertas" },
+  { key: "actividad", label: "Actividad" },
 ] as const;
 
 const additionalItemTypes: { value: InstallmentItemType; label: string }[] = [
@@ -149,7 +150,7 @@ export default function ContractDetailPage({ params }: PageProps) {
   const [lateFeeError, setLateFeeError] = useState<string | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<TabKey>("cuotas");
+  const [tab, setTab] = useState<TabKey>("resumen");
   const [contractNotificationSaving, setContractNotificationSaving] =
     useState(false);
   const [contractNotificationError, setContractNotificationError] = useState<
@@ -497,78 +498,6 @@ export default function ContractDetailPage({ params }: PageProps) {
 
   return (
     <section className="space-y-6">
-      <div className="space-y-1">
-        <div className="text-sm text-zinc-500">Contrato {contract.id}</div>
-        <h1 className="text-2xl font-semibold text-zinc-900">
-          {(contract as any)?.property?.title || "-"}
-        </h1>
-        <p className="text-sm text-zinc-600">
-          {(contract as any)?.property?.address || "-"}
-        </p>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-lg border border-zinc-200 bg-white p-4">
-          <div className="text-xs font-semibold text-zinc-500">Locatario</div>
-          <div className="text-sm font-medium text-zinc-900">
-            {contract.parties.tenant.fullName}
-          </div>
-          <div className="text-xs text-zinc-500">
-            {contract.parties.tenant.email || "Sin email"} |{" "}
-            {contract.parties.tenant.whatsapp || "Sin WhatsApp"}
-          </div>
-        </div>
-        <div className="rounded-lg border border-zinc-200 bg-white p-4">
-          <div className="text-xs font-semibold text-zinc-500">Propietario</div>
-          <div className="text-sm font-medium text-zinc-900">
-            {contract.parties.owner.fullName}
-          </div>
-          <div className="text-xs text-zinc-500">
-            {contract.parties.owner.email || "Sin email"} |{" "}
-            {contract.parties.owner.whatsapp || "Sin WhatsApp"}
-          </div>
-        </div>
-      </div>
-
-      <div className="rounded-lg border border-zinc-200 bg-white p-4">
-        <div className="flex flex-wrap items-center gap-4 text-sm text-zinc-600">
-          <div>
-            <span className="font-medium text-zinc-900">Inicio:</span>{" "}
-            {contract.dates.startDate}
-          </div>
-          <div>
-            <span className="font-medium text-zinc-900">Fin:</span>{" "}
-            {contract.dates.endDate}
-          </div>
-          <div>
-            <span className="font-medium text-zinc-900">Vence:</span> dia{" "}
-            {contract.dueDay}
-          </div>
-          <div>
-            <span className="font-medium text-zinc-900">Monto:</span>{" "}
-            {contract.rentAmount}
-          </div>
-          <div>
-            <span className="font-medium text-zinc-900">Garantia:</span>{" "}
-            {contract.guaranteeType}
-          </div>
-        </div>
-        <div className="mt-3 text-sm">
-          {contract.pdf?.downloadUrl ? (
-            <Link
-              href={contract.pdf.downloadUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="font-medium text-zinc-700 hover:text-zinc-900"
-            >
-              Ver PDF
-            </Link>
-          ) : (
-            <span className="text-zinc-500">Sin PDF</span>
-          )}
-        </div>
-      </div>
-
       <div className="flex flex-wrap gap-2">
         {tabOptions.map((option) => (
           <button
@@ -587,7 +516,105 @@ export default function ContractDetailPage({ params }: PageProps) {
       </div>
 
       <div className="rounded-lg border border-zinc-200 bg-white p-4">
-        {tab === "cuotas" && (
+        {tab === "resumen" && (
+          <div className="space-y-6">
+            <div className="space-y-1">
+              <div className="text-sm text-zinc-500">Contrato {contract.id}</div>
+              <h1 className="text-2xl font-semibold text-zinc-900">
+                {(contract as any)?.property?.title || "-"}
+              </h1>
+              <p className="text-sm text-zinc-600">
+                {(contract as any)?.property?.address || "-"}
+              </p>
+            </div>
+
+            <div className="rounded-lg border border-zinc-200 bg-white p-4">
+              <div className="flex flex-wrap items-center gap-4 text-sm text-zinc-600">
+                <div>
+                  <span className="font-medium text-zinc-900">Inicio:</span>{" "}
+                  {contract.dates.startDate}
+                </div>
+                <div>
+                  <span className="font-medium text-zinc-900">Fin:</span>{" "}
+                  {contract.dates.endDate}
+                </div>
+                <div>
+                  <span className="font-medium text-zinc-900">Vence:</span> dia{" "}
+                  {contract.dueDay}
+                </div>
+                <div>
+                  <span className="font-medium text-zinc-900">Monto:</span>{" "}
+                  {contract.rentAmount}
+                </div>
+                <div>
+                  <span className="font-medium text-zinc-900">Garantia:</span>{" "}
+                  {contract.guaranteeType}
+                </div>
+              </div>
+              <div className="mt-3 text-sm">
+                {contract.pdf?.downloadUrl ? (
+                  <Link
+                    href={contract.pdf.downloadUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-medium text-zinc-700 hover:text-zinc-900"
+                  >
+                    Ver PDF
+                  </Link>
+                ) : (
+                  <span className="text-zinc-500">Sin PDF</span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+        {tab === "partes" && (
+          <div className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="rounded-lg border border-zinc-200 bg-white p-4">
+                <div className="text-xs font-semibold text-zinc-500">Locatario</div>
+                <div className="text-sm font-medium text-zinc-900">
+                  {contract.parties.tenant.fullName}
+                </div>
+                <div className="text-xs text-zinc-500">
+                  {contract.parties.tenant.email || "Sin email"} |{" "}
+                  {contract.parties.tenant.whatsapp || "Sin WhatsApp"}
+                </div>
+              </div>
+              <div className="rounded-lg border border-zinc-200 bg-white p-4">
+                <div className="text-xs font-semibold text-zinc-500">Propietario</div>
+                <div className="text-sm font-medium text-zinc-900">
+                  {contract.parties.owner.fullName}
+                </div>
+                <div className="text-xs text-zinc-500">
+                  {contract.parties.owner.email || "Sin email"} |{" "}
+                  {contract.parties.owner.whatsapp || "Sin WhatsApp"}
+                </div>
+              </div>
+            </div>
+            <div className="space-y-3">
+              {contract.guarantors.map((guarantor, index) => (
+                <div
+                  key={`${guarantor.fullName}-${index}`}
+                  className="rounded-lg border border-zinc-200 p-3"
+                >
+                  <div className="text-sm font-medium text-zinc-900">
+                    {guarantor.fullName}
+                  </div>
+                  <div className="text-xs text-zinc-500">
+                    {guarantor.dni ? `DNI: ${guarantor.dni}` : "DNI: -"} |{" "}
+                    {guarantor.address}
+                  </div>
+                  <div className="text-xs text-zinc-500">
+                    {guarantor.email || "Sin email"} |{" "}
+                    {guarantor.whatsapp || "Sin WhatsApp"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {tab === "pagos" && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="text-sm text-zinc-600">
@@ -928,29 +955,7 @@ export default function ContractDetailPage({ params }: PageProps) {
             )}
           </div>
         )}
-        {tab === "garantes" && (
-          <div className="space-y-3">
-            {contract.guarantors.map((guarantor, index) => (
-              <div
-                key={`${guarantor.fullName}-${index}`}
-                className="rounded-lg border border-zinc-200 p-3"
-              >
-                <div className="text-sm font-medium text-zinc-900">
-                  {guarantor.fullName}
-                </div>
-                <div className="text-xs text-zinc-500">
-                  {guarantor.dni ? `DNI: ${guarantor.dni}` : "DNI: -"} |{" "}
-                  {guarantor.address}
-                </div>
-                <div className="text-xs text-zinc-500">
-                  {guarantor.email || "Sin email"} |{" "}
-                  {guarantor.whatsapp || "Sin WhatsApp"}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        {tab === "notificaciones" && (
+        {tab === "alertas" && (
           <div className="space-y-4 text-sm text-zinc-600">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -1433,7 +1438,7 @@ export default function ContractDetailPage({ params }: PageProps) {
             </div>
           </div>
         )}
-        {tab === "bitacora" && (
+        {tab === "actividad" && (
           <div className="space-y-4">
             <div className="rounded-lg border border-zinc-200 bg-white p-4">
               <div className="flex items-center justify-between">
@@ -1692,7 +1697,7 @@ export default function ContractDetailPage({ params }: PageProps) {
             </div>
           </div>
         )}
-        {tab === "zip" && (
+        {tab === "documentos" && (
           <div className="space-y-3">
             <div className="text-sm text-zinc-600">
               Descarga un ZIP con datos y adjuntos del contrato.
